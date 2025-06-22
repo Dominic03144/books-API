@@ -9,50 +9,52 @@ import {
   pgEnum
 } from "drizzle-orm/pg-core";
 
-// 🔷 ENUM: Define userType enum (same as before)
-export const roleEnum = pgEnum("userType", ['member', 'admin']);
+// 🔷 ENUM: Define userType enum 
+export const roleEnum = pgEnum("userType", ['member', 'admin', 'author']);
 
-// 🔹 Genre Table (was stateTable)
+// 🔹 Genre Table 
 export const genreTable = pgTable('genreTable', {
   genreId: serial('genreId').primaryKey(),
-  genreName: text('genreName'),
+  genreName: text('genreName').notNull(),
   genreCode: text('genreCode'),
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').defaultNow(),
 });
 
-// 🔹 Author Table (was cityTable)
-export const authorTable = pgTable('authorTable', {
-  authorId: serial('authorId').primaryKey(),
-  authorName: text('authorName'),
-  genreId: integer('genreId').notNull().references(() => genreTable.genreId, { onDelete: 'cascade' }),
+// 🔹 User Table 
+export const userTable = pgTable("userTable", {
+  userId: serial("userId").primaryKey(),
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  password: varchar("password", { length: 255 }).notNull(),
+  userType: roleEnum("userType").default("member").notNull(),
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').defaultNow(),
 });
 
-// 🔹 Book Table (was restaurantTable)
+// 🔹 Author Table 
+export const authorTable = pgTable('authorTable', {
+  authorId: serial('authorId').primaryKey(),
+  authorName: text('authorName').notNull(),
+  genreId: integer('genreId').references(() => genreTable.genreId, { onDelete: 'cascade' }),
+  authorUserId: integer('authorUserId').references(() => userTable.userId, { onDelete: 'set null' }),
+  createdAt: timestamp('createdAt').defaultNow(),
+  updatedAt: timestamp('updatedAt').defaultNow(),
+});
+
+// 🔹 Book Table 
 export const bookTable = pgTable('bookTable', {
   bookId: serial('bookId').primaryKey(),
-  title: text('title').notNull(),                // ✅ Renamed from bookTitle
-  description: text('description'),              // ✅ Added description
+  title: text('title').notNull(),
+  description: text('description'),
   isbn: text('isbn'),
   publicationYear: integer('publicationYear'),
   authorId: integer('authorId').notNull().references(() => authorTable.authorId, { onDelete: 'cascade' }),
   createdAt: timestamp('createdAt').defaultNow(),
   updatedAt: timestamp('updatedAt').defaultNow(),
 });
-// 🔹 User Table (same as before)
-export const userTable = pgTable("userTable", {
-  userId: serial("userId").primaryKey(),
-  fullName: varchar("fullName"),
-  email: varchar("email").notNull(),
-  password: varchar("password").notNull(),
-  userType: roleEnum("userType").default("member").notNull(),
-  createdAt: timestamp('createdAt').defaultNow(),
-  updatedAt: timestamp('updatedAt').defaultNow(),
-});
 
-// 🔹 Book Owner Table (was restaurantOwnerTable)
+// 🔹 Book Owner Table 
 export const bookOwnerTable = pgTable('bookOwnerTable', {
   bookOwnerId: serial('bookOwnerId').primaryKey(),
   bookId: integer("bookId").notNull().references(() => bookTable.bookId, { onDelete: 'cascade' }),
@@ -77,7 +79,12 @@ export type TBookOwnerSelect = typeof bookOwnerTable.$inferSelect;
 
 // 🔹 Relations
 
-// author → genre (one to one)
+// genre → authors (one to many)
+export const genreAuthorRelation = relations(genreTable, ({ many }) => ({
+  authors: many(authorTable)
+}));
+
+// author → genre (many to one)
 export const authorGenreRelation = relations(authorTable, ({ one }) => ({
   genre: one(genreTable, {
     fields: [authorTable.genreId],
@@ -85,12 +92,20 @@ export const authorGenreRelation = relations(authorTable, ({ one }) => ({
   })
 }));
 
-// genre → authors (one to many)
-export const genreAuthorRelation = relations(genreTable, ({ many }) => ({
-  authors: many(authorTable)
+// author → user (many to one)
+export const authorUserRelation = relations(authorTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [authorTable.authorUserId],
+    references: [userTable.userId]
+  })
 }));
 
-// book → author (one to one)
+// user → authorProfiles (one to many)
+export const userAuthorRelation = relations(userTable, ({ many }) => ({
+  authorProfiles: many(authorTable)
+}));
+
+// book → author (many to one)
 export const bookAuthorRelation = relations(bookTable, ({ one }) => ({
   author: one(authorTable, {
     fields: [bookTable.authorId],
