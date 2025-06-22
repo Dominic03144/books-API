@@ -1,29 +1,18 @@
 import { Router } from "express";
 import {
-  createBook,
-  deleteBook,
   getBooks,
   getBookById,
+  createBook,
   updateBook,
+  deleteBook,
 } from "./book.controller";
 
-import { adminRoleAuth, bothRolesAuth } from "../middleware/bearauth.ts"; // adjust path if needed
+const router = Router();
 
-export const bookRouter = Router();
+router.get("/books", getBooks);
+router.get("/books/:id", getBookById);
+router.post("/books", createBook);
+router.put("/books/:id", updateBook);
+router.delete("/books/:id", deleteBook);
 
-// 📚 Book routes
-
-// Get all books - accessible by admin and member
-bookRouter.get("/book", bothRolesAuth, getBooks);
-
-// Get book by ID - accessible by admin and member
-bookRouter.get("/book/:id", bothRolesAuth, getBookById);
-
-// Create a new book - only admin
-bookRouter.post("/book", adminRoleAuth, createBook);
-
-// Update an existing book - only admin
-bookRouter.put("/book/:id", adminRoleAuth, updateBook);
-
-// Delete an existing book - only admin
-bookRouter.delete("/book/:id", adminRoleAuth, deleteBook);
+export default router;

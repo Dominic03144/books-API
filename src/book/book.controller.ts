@@ -1,115 +1,119 @@
 import { Request, Response } from "express";
 import {
-    createBookServices,
-    deleteBookServices,
-    getBookByIdServices,
-    getBooksServices,
-    updateBookServices
+  createBookServices,
+  getBooksServices,
+  getBookByIdServices,
+  updateBookServices,
+  deleteBookServices,
 } from "./book.service";
+import { getAuthorByName, createAuthor } from "../auth/auth.service";
 
+// Get all books
 export const getBooks = async (req: Request, res: Response) => {
-    try {
-        const allBooks = await getBooksServices();
-        if (!allBooks || allBooks.length === 0) {
-            res.status(404).json({ message: "No books found" });
-        } else {
-            res.status(200).json(allBooks);
-        }
-    } catch (error: any) {
-        res.status(500).json({ error: error.message || "Failed to fetch books" });
-    }
+  try {
+    const books = await getBooksServices();
+    res.status(200).json(books);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get books" });
+  }
 };
 
+// Get a single book by ID
 export const getBookById = async (req: Request, res: Response) => {
-    const bookId = parseInt(req.params.id);
-    if (isNaN(bookId)) {
-        res.status(400).json({ error: "Invalid book ID" });
-        return;
+  try {
+    const id = Number(req.params.id);
+    const book = await getBookByIdServices(id);
+    if (!book) {
+      return res.status(404).json({ error: "Book not found" });
     }
-    try {
-        const book = await getBookByIdServices(bookId);
-        if (!book) {
-            res.status(404).json({ message: "Book not found" });
-        } else {
-            res.status(200).json(book);
-        }
-    } catch (error: any) {
-        res.status(500).json({ error: error.message || "Failed to fetch book" });
-    }
+    res.status(200).json(book);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to get book" });
+  }
 };
 
+// Create a new book
 export const createBook = async (req: Request, res: Response) => {
-    const { title, description, authorId, isbn, publicationYear } = req.body;
-    if (!title || !authorId) {
-        res.status(400).json({ error: "Book title and author ID are required" });
-        return;
+  const { title, author } = req.body;
+
+  if (!title || !author) {
+    return res.status(400).json({ error: "Title and author name are required" });
+  }
+
+  try {
+    let authorRecord = await getAuthorByName(author);
+
+    // If author not found, create one with default genreId
+    if (!authorRecord) {
+      authorRecord = await createAuthor({ authorName: author, genreId: 1 });
     }
-    try {
-        const newBook = await createBookServices({
-            title,
-            description,
-            authorId,
-            isbn,
-            publicationYear,
-        });
-        if (!newBook) {
-            res.status(500).json({ message: "Failed to create book" });
-        } else {
-            res.status(201).json(newBook);
-        }
-    } catch (error: any) {
-        res.status(500).json({ error: error.message || "Failed to create book" });
-    }
+
+    const newBook = await createBookServices({
+      title,
+      authorId: authorRecord.authorId,
+    });
+
+    res.status(201).json({
+      message: "✅ Book added successfully",
+      book: newBook,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create book" });
+  }
 };
 
+// Update a book by ID
 export const updateBook = async (req: Request, res: Response) => {
-    const bookId = parseInt(req.params.id);
-    if (isNaN(bookId)) {
-        res.status(400).json({ error: "Invalid book ID" });
-        return;
+  const id = Number(req.params.id);
+  const { title, author } = req.body;
+
+  if (!title || !author) {
+    return res.status(400).json({ error: "Title and author are required" });
+  }
+
+  try {
+    let authorRecord = await getAuthorByName(author);
+
+    // If author not found, create one with default genreId
+    if (!authorRecord) {
+      authorRecord = await createAuthor({ authorName: author, genreId: 1 });
     }
-    const { title, description, authorId, isbn, publicationYear } = req.body;
-    if (!title || !authorId) {
-        res.status(400).json({ error: "Book title and author ID are required" });
-        return;
+
+    const updatedBook = await updateBookServices(id, {
+      title,
+      authorId: authorRecord.authorId,
+    });
+
+    if (!updatedBook) {
+      return res.status(404).json({ error: "Book not found" });
     }
-    try {
-        const updatedBook = await updateBookServices(bookId, {
-            title,
-            description,
-            authorId,
-            isbn,
-            publicationYear,
-        });
-        if (!updatedBook) {
-            res.status(404).json({ message: "Book not found or failed to update" });
-        } else {
-            res.status(200).json(updatedBook);
-        }
-    } catch (error: any) {
-        res.status(500).json({ error: error.message || "Failed to update book" });
-    }
+
+    res.status(200).json({
+      message: "✅ Book updated successfully",
+      book: updatedBook,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update book" });
+  }
 };
 
+// Delete a book by ID
 export const deleteBook = async (req: Request, res: Response) => {
-    const bookId = parseInt(req.params.id);
-    if (isNaN(bookId)) {
-        res.status(400).json({ error: "Invalid book ID" });
-        return;
+  try {
+    const id = Number(req.params.id);
+    const deleted = await deleteBookServices(id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: "Book not found" });
     }
-    try {
-        const existingBook = await getBookByIdServices(bookId);
-        if (!existingBook) {
-            res.status(404).json({ message: "Book not found" });
-            return;
-        }
-        const deletedBook = await deleteBookServices(bookId);
-        if (deletedBook) {
-            res.status(200).json({ message: "Book deleted successfully" });
-        } else {
-            res.status(404).json({ message: "Book not found or failed to delete" });
-        }
-    } catch (error: any) {
-        res.status(500).json({ error: error.message || "Failed to delete book" });
-    }
+
+    res.status(200).json({ message: "🗑️ Book deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete book" });
+  }
 };
