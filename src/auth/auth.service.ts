@@ -10,9 +10,9 @@ import {
 } from "../drizzle/schema";
 
 // Register a new user
-export const createUserServices = async (user: TUserInsert): Promise<string> => {
-  await db.insert(userTable).values(user).returning();
-  return "User Created Successfully 😎";
+export const createUserServices = async (user: TUserInsert): Promise<TUserSelect> => {
+  const [newUser] = await db.insert(userTable).values(user).returning();
+  return newUser; // return the created user
 };
 
 // Get user by email

@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import { createUserServices, getUserByEmailIdServices } from "./auth.service";
 
 // Register Logic
+
+// Register Logic
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const user: { fullName: string; email: string; password: string; userType?: string } = req.body;
@@ -14,13 +16,20 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Validate userType if provided
-    let validatedUserType: "admin" | "member" | undefined = undefined;
+    // 🔒 Check if user already exists
+    const existingUser = await getUserByEmailIdServices(user.email);
+    if (existingUser) {
+      res.status(409).json({ error: "User already exists with this email" });
+      return;
+    }
+
+    // Validate and normalize userType
+    let validatedUserType: "admin" | "member" | "author" = "member"; // default
     if (user.userType) {
-      if (user.userType === "admin" || user.userType === "member") {
-        validatedUserType = user.userType;
+      if (["admin", "member", "author"].includes(user.userType)) {
+        validatedUserType = user.userType as "admin" | "member" | "author";
       } else {
-        res.status(400).json({ error: "Invalid userType. Must be 'admin' or 'member'." });
+        res.status(400).json({ error: "Invalid userType. Must be 'admin', 'member', or 'author'." });
         return;
       }
     }
@@ -28,10 +37,6 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(user.password, salt);
-
-
-
-
 
     // Final user object
     const userToCreate = {
@@ -72,8 +77,6 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-
-    
     // Generate JWT token
     const payload = {
       userId: existingUser.userId,
