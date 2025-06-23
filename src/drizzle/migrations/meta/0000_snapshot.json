@@ -1,5 +1,5 @@
 {
-  "id": "0e7cb71d-04c9-4ae3-9519-c6a67093ab6d",
+  "id": "76732002-1a5e-4883-9e1a-ce5e869d312f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -18,13 +18,19 @@
           "name": "authorName",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "genreId": {
           "name": "genreId",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "authorUserId": {
+          "name": "authorUserId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -54,6 +60,19 @@
             "genreId"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "authorTable_authorUserId_userTable_userId_fk": {
+          "name": "authorTable_authorUserId_userTable_userId_fk",
+          "tableFrom": "authorTable",
+          "tableTo": "userTable",
+          "columnsFrom": [
+            "authorUserId"
+          ],
+          "columnsTo": [
+            "userId"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -212,7 +231,7 @@
           "name": "genreName",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "genreCode": {
           "name": "genreCode",
@@ -255,19 +274,19 @@
         },
         "fullName": {
           "name": "fullName",
-          "type": "varchar",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "email": {
           "name": "email",
-          "type": "varchar",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
         "password": {
           "name": "password",
-          "type": "varchar",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -309,7 +328,8 @@
       "schema": "public",
       "values": [
         "member",
-        "admin"
+        "admin",
+        "author"
       ]
     }
   },
